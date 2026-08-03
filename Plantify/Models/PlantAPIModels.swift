@@ -1,19 +1,51 @@
 import Foundation
 
-struct PlantAPIResponse: Codable {
-    let data: [PlantAPIItem]?
-    let error: String?
-    let message: String?
+// SEARCH RESPONSE
+struct OPBSearchResponse: Codable {
+    let count: Int
+    let next: String?
+    let previous: String?
+    let results: [OPBSearchItem]
 }
 
-struct PlantAPIItem: Codable {
-    let id: Int?
-    let common_name: String?
-    let scientific_name: [String]?
-    let other_name: [String]?
-    let default_image: PlantAPIImage?
+struct OPBSearchItem: Codable {
+    let pid: String
+    let display_pid: String
+    let alias: String?
+    let category: String?
 }
 
-struct PlantAPIImage: Codable {
-    let medium_url: String?
+// DETAIL RESPONSE (direct object, no "data")
+struct OPBPlantDetail: Codable {
+    let pid: String
+    let display_pid: String
+    let alias: String?
+    let category: String?
+
+    let max_light_mmol: Int?
+    let min_light_mmol: Int?
+    let max_light_lux: Int?
+    let min_light_lux: Int?
+
+    let max_temp: Int?
+    let min_temp: Int?
+
+    let max_env_humid: Int?
+    let min_env_humid: Int?
+
+    let max_soil_moist: Int?
+    let min_soil_moist: Int?
+
+    let max_soil_ec: Int?
+    let min_soil_ec: Int?
+
+    let origin: String?
+    let image_url: String?
+
+    let common_names: [CommonName]?
+}
+
+struct CommonName: Codable {
+    let name: String
+    let language_code: String
 }

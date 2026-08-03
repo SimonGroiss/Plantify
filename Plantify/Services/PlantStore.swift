@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import SwiftUI
 
 @MainActor
 final class PlantStore: ObservableObject {
@@ -34,10 +35,8 @@ final class PlantStore: ObservableObject {
         NotificationManager.shared.scheduleReminder(for: plant)
     }
 
-    func deletePlant(_ plant: Plant) {
-        plants.removeAll { $0.id == plant.id }
-        save()
-        NotificationManager.shared.cancelReminder(for: plant.id)
+    func deletePlant(at offsets: IndexSet) {
+        plants.remove(atOffsets: offsets)
     }
 
     func markAsWatered(plantID: UUID) {

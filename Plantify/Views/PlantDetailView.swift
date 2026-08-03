@@ -1,145 +1,196 @@
 import SwiftUI
 
 struct PlantDetailView: View {
-    @EnvironmentObject var store: PlantStore
-    @Environment(\.dismiss) private var dismiss
-    @State var plant: Plant
-    @State private var showingEdit = false
-    @State private var showingDeleteConfirm = false
+    let plant: Plant
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                imageHeader
+            VStack(alignment: .leading, spacing: 20) {
 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(plant.name).font(.largeTitle.bold())
-                    Text(plant.species).foregroundStyle(.secondary)
+                // MARK: - Bild
+                if let data = plant.imageData,
+                   let uiImage = UIImage(data: data) {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .scaledToFit()
+                        .cornerRadius(12)
                 }
 
-                wateringCard
-                infoGrid
+                // MARK: - Grunddaten
+                Group {
+                    Text(plant.name)
+                        .font(.largeTitle)
+                        .bold()
 
-                if !plant.notes.isEmpty {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Notizen").font(.headline)
-                        Text(plant.notes)
+                    if !plant.species.isEmpty {
+                        Text("Art: \(plant.species)")
+                    }
+
+                    if let family = plant.family {
+                        Text("Familie: \(family)")
+                    }
+
+                    if let origin = plant.origin {
+                        Text("Herkunft: \(origin)")
+                    }
+
+                    if !plant.commonNames.isEmpty {
+                        Text("Weitere Namen: \(plant.commonNames.joined(separator: ", "))")
                     }
                 }
 
-                Button(role: .destructive) {
-                    showingDeleteConfirm = true
-                } label: {
-                    Label("Pflanze löschen", systemImage: "trash")
-                        .frame(maxWidth: .infinity)
+                Divider()
+
+                // MARK: - API Lichtdaten
+                Group {
+                    Text("Licht")
+                        .font(.title3)
+                        .bold()
+
+                    if let minLux = plant.minLightLux {
+                        Text("Min. Licht (lux): \(minLux)")
+                    }
+                    if let maxLux = plant.maxLightLux {
+                        Text("Max. Licht (lux): \(maxLux)")
+                    }
+
+                    if let minMMOL = plant.minLightMMOL {
+                        Text("Min. Licht (mmol): \(minMMOL)")
+                    }
+                    if let maxMMOL = plant.maxLightMMOL {
+                        Text("Max. Licht (mmol): \(maxMMOL)")
+                    }
                 }
-                .buttonStyle(.bordered)
-                .padding(.top, 24)
+
+                Divider()
+
+                // MARK: - API Temperatur
+                Group {
+                    Text("Temperatur")
+                        .font(.title3)
+                        .bold()
+
+                    if let minTemp = plant.minTemp {
+                        Text("Min. Temperatur: \(minTemp)°C")
+                    }
+                    if let maxTemp = plant.maxTemp {
+                        Text("Max. Temperatur: \(maxTemp)°C")
+                    }
+                }
+
+                Divider()
+
+                // MARK: - API Luftfeuchtigkeit
+                Group {
+                    Text("Luftfeuchtigkeit")
+                        .font(.title3)
+                        .bold()
+
+                    if let minHum = plant.minEnvHumid {
+                        Text("Min. Luftfeuchte: \(minHum)%")
+                    }
+                    if let maxHum = plant.maxEnvHumid {
+                        Text("Max. Luftfeuchte: \(maxHum)%")
+                    }
+                }
+
+                Divider()
+
+                // MARK: - API Bodenfeuchte & EC
+                Group {
+                    Text("Boden")
+                        .font(.title3)
+                        .bold()
+
+                    if let minMoist = plant.minSoilMoist {
+                        Text("Min. Bodenfeuchte: \(minMoist)%")
+                    }
+                    if let maxMoist = plant.maxSoilMoist {
+                        Text("Max. Bodenfeuchte: \(maxMoist)%")
+                    }
+
+                    if let minEC = plant.minSoilEC {
+                        Text("Min. EC: \(minEC)")
+                    }
+                    if let maxEC = plant.maxSoilEC {
+                        Text("Max. EC: \(maxEC)")
+                    }
+                }
+
+                Divider()
+
+                // MARK: - Pflegeinfos aus API
+                Group {
+                    Text("Pflegeinformationen")
+                        .font(.title3)
+                        .bold()
+
+                    if let watering = plant.wateringInfo {
+                        Text("Wasser: \(watering)")
+                    }
+
+                    if let light = plant.lightInfo {
+                        Text("Licht: \(light)")
+                    }
+
+                    if let soil = plant.soilInfo {
+                        Text("Boden: \(soil)")
+                    }
+
+                    if let fert = plant.fertilizationInfo {
+                        Text("Düngung: \(fert)")
+                    }
+
+                    if let prune = plant.pruningInfo {
+                        Text("Schnitt: \(prune)")
+                    }
+                }
+
+                Divider()
+
+                // MARK: - App-spezifische Daten
+                Group {
+                    Text("Eigene Pflegeparameter")
+                        .font(.title3)
+                        .bold()
+
+                    Text("Standort: \(plant.location)")
+                    Text("Lichtlevel: \(plant.light.rawValue)")
+                    Text("Luftfeuchtigkeit: \(plant.humidity.rawValue)")
+                    Text("Gießintervall: alle \(plant.wateringIntervalDays) Tage")
+
+                    Text("Zuletzt gegossen: \(formattedDate(plant.lastWatered))")
+
+                    Text("Nächste Bewässerung: \(formattedDate(plant.nextWateringDate))")
+                        .foregroundColor(plant.isOverdue ? .red : .primary)
+                }
+
+                Divider()
+
+                // MARK: - Notizen
+                Group {
+                    Text("Notizen")
+                        .font(.title3)
+                        .bold()
+
+                    if plant.notes.isEmpty {
+                        Text("Keine Notizen vorhanden.")
+                            .foregroundColor(.secondary)
+                    } else {
+                        Text(plant.notes)
+                    }
+                }
             }
             .padding()
         }
         .navigationTitle(plant.name)
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button("Bearbeiten") { showingEdit = true }
-            }
-        }
-        .sheet(isPresented: $showingEdit) {
-            AddPlantView()
-        }
-        .confirmationDialog("Diese Pflanze wirklich löschen?", isPresented: $showingDeleteConfirm, titleVisibility: .visible) {
-            Button("Löschen", role: .destructive) {
-                store.deletePlant(plant)
-                dismiss()
-            }
-            Button("Abbrechen", role: .cancel) {}
-        }
     }
 
-    private var imageHeader: some View {
-        Group {
-            if let data = plant.imageData,
-               let uiImage = UIImage(data: data) {
-                Image(uiImage: uiImage)
-                    .resizable()
-                    .scaledToFill()
-            } else {
-                Image(systemName: "leaf.fill")
-                    .resizable()
-                    .scaledToFit()
-                    .padding(40)
-                    .foregroundStyle(.green)
-                    .background(Color.green.opacity(0.15))
-            }
-        }
-        .frame(height: 200)
-        .frame(maxWidth: .infinity)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-    }
-
-    private var wateringCard: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Image(systemName: "drop.fill").foregroundStyle(.blue)
-                Text(plant.isOverdue
-                     ? "Gießen ist fällig!"
-                     : "Nächstes Gießen: \(plant.nextWateringDate.formatted(date: .abbreviated, time: .omitted))")
-                    .font(.headline)
-                    .foregroundStyle(plant.isOverdue ? .red : .primary)
-            }
-            Text("Zuletzt gegossen: \(plant.lastWatered.formatted(date: .abbreviated, time: .omitted))")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-            Text("Intervall: alle \(plant.wateringIntervalDays) Tage")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-
-            Button {
-                store.markAsWatered(plantID: plant.id)
-                plant.lastWatered = Date()
-            } label: {
-                Label("Jetzt gegossen", systemImage: "checkmark.circle.fill")
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.borderedProminent)
-            .tint(.blue)
-            .padding(.top, 4)
-        }
-        .padding()
-        .background(Color(.secondarySystemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-    }
-
-    private var infoGrid: some View {
-        VStack(spacing: 0) {
-            infoRow(icon: "mappin.and.ellipse", title: "Standort", value: plant.location)
-            Divider()
-            infoRow(icon: plant.light.symbolName, title: "Licht", value: plant.light.rawValue)
-            Divider()
-            infoRow(icon: "humidity", title: "Luftfeuchte", value: plant.humidity.rawValue)
-            Divider()
-            infoRow(icon: "leaf", title: "Wissenschaftlicher Name", value: plant.species)
-
-            if !plant.otherNames.isEmpty {
-                Divider()
-                infoRow(icon: "tag", title: "Andere Namen", value: plant.otherNames.joined(separator: ", "))
-            }
-
-            Divider()
-            infoRow(icon: "number", title: "Perenual ID", value: "\(plant.perenualID)")
-        }
-        .background(Color(.secondarySystemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-    }
-
-    private func infoRow(icon: String, title: String, value: String) -> some View {
-        HStack {
-            Image(systemName: icon).frame(width: 24).foregroundStyle(.green)
-            Text(title)
-            Spacer()
-            Text(value).foregroundStyle(.secondary)
-        }
-        .padding()
+    // MARK: - Datum formatieren
+    private func formattedDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        return formatter.string(from: date)
     }
 }

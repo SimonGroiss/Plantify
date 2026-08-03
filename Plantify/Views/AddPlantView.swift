@@ -21,12 +21,9 @@ struct AddPlantView: View {
             .navigationTitle("Pflanze hinzufügen")
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Speichern") {
-                        save()
-                    }
-                    .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
+                    Button("Speichern") { save() }
+                        .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
-
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Abbrechen") { dismiss() }
                 }
@@ -47,9 +44,7 @@ struct AddPlantView: View {
             if let item = apiItem {
                 plant = Plant.fromAPI(item)
 
-                // Bild laden (falls nicht upgrade_access)
-                if let urlString = item.default_image?.medium_url,
-                   !urlString.contains("upgrade_access"),
+                if let urlString = item.image_url,
                    let url = URL(string: urlString),
                    let data = try? Data(contentsOf: url) {
                     plant.imageData = data
@@ -59,15 +54,16 @@ struct AddPlantView: View {
                     id: UUID(),
                     name: name,
                     species: "",
-                    otherNames: [],
-                    perenualID: 0,
+                    family: nil,
+                    origin: nil,
+                    imageData: nil,
+                    commonNames: [],
                     location: "",
                     light: .mittel,
                     humidity: .mittel,
                     wateringIntervalDays: 7,
                     lastWatered: Date(),
-                    notes: "",
-                    imageData: nil
+                    notes: ""
                 )
             }
 

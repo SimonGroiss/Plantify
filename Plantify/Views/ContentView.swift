@@ -6,27 +6,17 @@ struct ContentView: View {
 
     var body: some View {
         NavigationStack {
-            Group {
-                if store.plants.isEmpty {
-                    ContentUnavailableView(
-                        "Noch keine Pflanzen",
-                        systemImage: "leaf",
-                        description: Text("Füge deine erste Zimmerpflanze hinzu.")
-                    )
-                } else {
-                    List {
-                        ForEach(store.plants.sorted(by: { $0.nextWateringDate < $1.nextWateringDate })) { plant in
-                            NavigationLink(destination: PlantDetailView(plant: plant)) {
-                                PlantRowView(plant: plant)
-                            }
-                        }
+            List {
+                ForEach(store.plants) { plant in
+                    NavigationLink(destination: PlantDetailView(plant: plant)) {
+                        PlantRowView(plant: plant)
                     }
                 }
+                .onDelete(perform: store.deletePlant)   // jetzt korrekt
             }
-
             .navigationTitle("Meine Pflanzen")
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         showingAddPlant = true
                     } label: {
@@ -36,6 +26,7 @@ struct ContentView: View {
             }
             .sheet(isPresented: $showingAddPlant) {
                 AddPlantView()
+                    .environmentObject(store)
             }
         }
     }

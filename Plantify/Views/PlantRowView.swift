@@ -16,12 +16,6 @@ struct PlantRowView: View {
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
-
-                if !plant.otherNames.isEmpty {
-                    Text(plant.otherNames.joined(separator: ", "))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
             }
 
             Spacer()
