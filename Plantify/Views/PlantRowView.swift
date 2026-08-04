@@ -5,53 +5,44 @@ struct PlantRowView: View {
 
     var body: some View {
         HStack(spacing: 16) {
-            plantImage
 
-            VStack(alignment: .leading, spacing: 4) {
-                Text(plant.name)
-                    .font(.headline)
-
-                if !plant.species.isEmpty {
-                    Text(plant.species)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-            }
-
-            Spacer()
-
-            VStack(alignment: .trailing) {
-                Text("Alle \(plant.wateringIntervalDays) Tage")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                if plant.isOverdue {
-                    Text("Fällig")
-                        .font(.caption)
-                        .foregroundStyle(.red)
-                }
-            }
-        }
-        .padding(.vertical, 8)
-    }
-
-    private var plantImage: some View {
-        Group {
+            // Bild
             if let data = plant.imageData,
                let uiImage = UIImage(data: data) {
                 Image(uiImage: uiImage)
                     .resizable()
                     .scaledToFill()
+                    .frame(width: 60, height: 60)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
             } else {
-                Image(systemName: "leaf.fill")
-                    .resizable()
-                    .scaledToFit()
-                    .foregroundStyle(.green)
-                    .padding(12)
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(Color(.secondarySystemBackground))
+                    .frame(width: 60, height: 60)
+                    .overlay(
+                        Image(systemName: "leaf.fill")
+                            .foregroundColor(.green)
+                    )
             }
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text(plant.name)
+                    .font(.headline)
+
+                if plant.needsWaterNow {
+                    Label("Heute gießen", systemImage: "drop.fill")
+                        .foregroundColor(.orange)
+                } else if plant.isOverdue {
+                    Label("Überfällig!", systemImage: "exclamationmark.circle.fill")
+                        .foregroundColor(.red)
+                } else {
+                    Label("In \(plant.daysUntilNextWatering) Tagen", systemImage: "clock")
+                        .foregroundColor(.blue)
+                }
+
+            }
+
+            Spacer()
         }
-        .frame(width: 60, height: 60)
-        .background(Color.green.opacity(0.15))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .padding(.vertical, 8)
     }
 }

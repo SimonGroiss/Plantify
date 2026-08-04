@@ -37,18 +37,13 @@ struct AddPlantView: View {
 
             isLoading = true
 
-            let apiItem = try? await PlantAPIService().searchPlant(named: name)
+            // API liefert jetzt direkt Plant
+            let apiPlant = try? await PlantAPIService().searchPlant(named: name)
 
             var plant: Plant
 
-            if let item = apiItem {
-                plant = Plant.fromAPI(item)
-
-                if let urlString = item.image_url,
-                   let url = URL(string: urlString),
-                   let data = try? Data(contentsOf: url) {
-                    plant.imageData = data
-                }
+            if let apiPlant {
+                plant = apiPlant
             } else {
                 plant = Plant(
                     id: UUID(),
@@ -68,8 +63,10 @@ struct AddPlantView: View {
             }
 
             store.addPlant(plant)
+            NotificationManager.shared.scheduleReminder(for: plant)
             isLoading = false
             dismiss()
         }
     }
+
 }

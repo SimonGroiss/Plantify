@@ -8,7 +8,7 @@ class PlantAPIService {
     private let detailBaseURL = "https://open.plantbook.io/api/v1/plant/detail"
 
     // MARK: - SEARCH
-    func searchPlant(named name: String) async throws -> OPBPlantDetail? {
+    func searchPlant(named name: String) async throws -> Plant? {
 
         let alias = name.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? name
         let urlString = "\(searchBaseURL)?alias=\(alias)"
@@ -29,6 +29,13 @@ class PlantAPIService {
         print("🟢 STATUS:", status)
         print("🟢 RAW RESPONSE:\n", String(data: data, encoding: .utf8) ?? "NO DATA")
 
+        // HTML error handling (502 etc.)
+        if let text = String(data: data, encoding: .utf8),
+           text.starts(with: "<") {
+            print("⚠️ Plantbook API returned HTML instead of JSON.")
+            return nil
+        }
+
         do {
             let decoded = try JSONDecoder().decode(OPBSearchResponse.self, from: data)
             print("🟢 DECODED SEARCH RESULTS:", decoded.results.count)
@@ -39,7 +46,13 @@ class PlantAPIService {
             }
 
             print("🟢 FIRST PID:", first.pid)
-            return try await fetchDetail(pid: first.pid)
+            let detail = try await fetchDetail(pid: first.pid)
+
+            // Load image
+            let imageData = await loadImage(from: detail.image_url)
+
+            // Convert to Plant
+            return Plant.fromAPI(detail, imageData: imageData)
 
         } catch {
             print("🔴 DECODING ERROR:", error)
@@ -68,6 +81,13 @@ class PlantAPIService {
         print("🟣 STATUS:", status)
         print("🟣 RAW RESPONSE:\n", String(data: data, encoding: .utf8) ?? "NO DATA")
 
+        // HTML error handling
+        if let text = String(data: data, encoding: .utf8),
+           text.starts(with: "<") {
+            print("⚠️ Plantbook API returned HTML instead of JSON.")
+            throw NSError(domain: "PlantAPI", code: 502)
+        }
+
         do {
             let decoded = try JSONDecoder().decode(OPBPlantDetail.self, from: data)
             print("🟣 DECODED DETAIL OK")
@@ -75,6 +95,20 @@ class PlantAPIService {
         } catch {
             print("🔴 DECODING ERROR:", error)
             throw error
+        }
+    }
+
+    // MARK: - IMAGE LOADING
+    private func loadImage(from urlString: String?) async -> Data? {
+        guard let urlString = urlString,
+              let url = URL(string: urlString) else { return nil }
+
+        do {
+            let (data, _) = try await URLSession.shared.data(from: url)
+            return data
+        } catch {
+            print("⚠️ Could not load image:", error)
+            return nil
         }
     }
 }

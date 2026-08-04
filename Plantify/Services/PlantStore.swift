@@ -6,21 +6,61 @@ import SwiftUI
 final class PlantStore: ObservableObject {
     @Published private(set) var plants: [Plant] = []
 
+    // SORTIERTE LISTE FÜR DIE OVERVIEW
+    var sortedPlants: [Plant] {
+        plants.sorted {
+
+            // 1. Überfällig zuerst
+            if $0.isOverdue != $1.isOverdue {
+                return $0.isOverdue
+            }
+
+            // 2. Heute gießen
+            if $0.needsWaterNow != $1.needsWaterNow {
+                return $0.needsWaterNow
+            }
+
+            // 3. Sonst nach Tagen bis zum Gießen
+            return $0.daysUntilNextWatering < $1.daysUntilNextWatering
+        }
+    }
+
     private let fileURL: URL = {
         let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         return dir.appendingPathComponent("plants.json")
     }()
 
     init() {
-
         load()
-        // Wenn der Nutzer die "Gegossen ✓"-Aktion in einer Benachrichtigung tippt,
-        // wird das hier direkt im Store verarbeitet.
-        
+
         NotificationManager.shared.onMarkWatered = { [weak self] plantID in
             self?.markAsWatered(plantID: plantID)
         }
     }
+
+    func remove(_ plant: Plant) {
+        if let index = plants.firstIndex(where: { $0.id == plant.id }) {
+            plants.remove(at: index)
+        }
+    }
+
+    func markWatered(_ plant: Plant) {
+        if let index = plants.firstIndex(where: { $0.id == plant.id }) {
+            plants[index].lastWatered = Date()
+
+            // UI sofort aktualisieren
+            objectWillChange.send()
+
+            // speichern
+            save()
+
+            // neuen Reminder planen
+            NotificationManager.shared.scheduleReminder(for: plants[index])
+        }
+    }
+
+
+    
 
     func addPlant(_ plant: Plant) {
         plants.append(plant)
@@ -37,6 +77,7 @@ final class PlantStore: ObservableObject {
 
     func deletePlant(at offsets: IndexSet) {
         plants.remove(atOffsets: offsets)
+        save()
     }
 
     func markAsWatered(plantID: UUID) {
@@ -46,8 +87,6 @@ final class PlantStore: ObservableObject {
         NotificationManager.shared.scheduleReminder(for: plants[index])
     }
 
-    /// Wird beim App-Start aufgerufen, um sicherzustellen, dass für alle
-    /// Pflanzen aktuelle Erinnerungen geplant sind.
     func rescheduleAllReminders() {
         for plant in plants {
             NotificationManager.shared.scheduleReminder(for: plant)
